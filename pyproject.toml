@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smartlog-tui"
+version = "0.2.0"
+authors = [
+  { name="insanazor822" },
+]
+description = "Fast, terminal-based log stream viewer with automated AI root-cause diagnostics."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+]
+dependencies = [
+    "textual>=0.47.0",
+    "rich>=13.7.0",
+    "aiofiles>=23.2.1",
+]
+[project.scripts]
+smartlog = "main:main"
+
+[tool.setuptools]
+py-modules = ["main", "ui", "log_reader", "ai_diagnostics", "parser", "utils", "license"]
