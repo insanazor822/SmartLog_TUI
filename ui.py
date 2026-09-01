@@ -6,6 +6,7 @@ Provides the main user interface with panels, controls, and keyboard shortcuts.
 from __future__ import annotations
 
 import asyncio
+import webbrowser
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,9 @@ from exporter import LogExporter
 from license import LicenseTier, get_license_manager
 from log_reader import LogEntry, LogStreamManager
 from parser import AnomalyStats, FilterEngine, LogLevel, LogParser, LogStatistics
+
+# Lemon Squeezy Mağaza Linki
+LEMON_SQUEEZY_STORE_URL = "https://smartlog.lemonsqueezy.com/"
 
 # Color coding for log levels
 LOG_LEVEL_COLORS = {
@@ -183,7 +187,12 @@ class LicenseScreen(ModalScreen[dict[str, Any] | None]):
     def compose(self) -> ComposeResult:
         with Vertical(id="modal_dialog"):
             yield Static("[bold blue]=== LICENSE MANAGEMENT ===[/bold blue]\n")
-            yield Static("Enter your SmartLog license key below:")
+            yield Static("Need a license? Get lifetime access:")
+
+            # 🛒 Primary renk ile diğer butonlarla uyumlu mağaza butonu
+            yield Button("🛒 Get Pro License (Open Store)", variant="primary", id="buy_btn")
+
+            yield Static("\nEnter your SmartLog license key below:")
             yield Input(placeholder="SL-PRO-XXXX-XXXX-XXXX", id="license_input")
             yield Label("", id="license_status")
             with Horizontal(classes="button_row"):
@@ -193,7 +202,15 @@ class LicenseScreen(ModalScreen[dict[str, Any] | None]):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button clicks."""
-        if event.button.id == "activate_btn":
+        if event.button.id == "buy_btn":
+            try:
+                webbrowser.open(LEMON_SQUEEZY_STORE_URL)
+                status_label = self.query_one("#license_status", Label)
+                status_label.update("[green]Opening store page in your browser...[/green]")
+            except Exception as e:
+                status_label = self.query_one("#license_status", Label)
+                status_label.update(f"[red]Could not open browser: {e}[/red]")
+        elif event.button.id == "activate_btn":
             self.activate_license()
         elif event.button.id == "cancel_btn":
             self.dismiss(None)
@@ -355,9 +372,6 @@ class ExportScreen(ModalScreen[dict[str, Any] | None]):
             self._copy_clipboard()
         elif event.button.id == "cancel_btn":
             self.dismiss(None)
-
-    def _save_to_file() -> None:
-        pass
 
     def _save_to_file(self) -> None:
         """Save the export to the selected file path."""
