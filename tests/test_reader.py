@@ -29,25 +29,26 @@ async def drain(stream: LogStream, *, want: int = 1, timeout: float = 5.0):
 
 
 async def await_workers(stream: LogStream, count: int, *, timeout: float = 5.0) -> None:
-    """Wait until ``stream`` has ``count`` workers that are actually following.
+    """Wait until ``stream`` has registered ``count`` worker threads.
 
-    ``LogStream.add_path`` registers the worker and starts the thread, but the
-    thread has not yet opened or stat'ed the file when the call returns. A test
-    that appends to the new path immediately afterwards races that first
-    ``os.stat``/``seek``, so on a loaded runner the appended line can be missed.
+    ``LogStream.add_path`` inserts the worker into the registry and starts its
+    thread, but the thread has not run its first ``os.stat``/``seek`` when the
+    call returns. A test that appends to the new path immediately afterwards
+    races that first read, so the line can be missed.
 
-    ``worker_health`` reports ``missing`` until the worker has the file open, so
-    waiting for every worker to leave that state removes the race instead of
-    papering over it with a longer timeout.
+    Only the registry is checked here — deliberately *not* the follow state. A
+    worker for a path that does not exist yet reports ``missing``, which is
+    exactly the state the test is about to resolve by writing the file, so
+    waiting for it to clear would deadlock.
     """
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         health = stream.worker_health()
-        if len(health) >= count and not any(state == "missing" for _, _, state in health):
+        if len(health) >= count and all(alive for _, alive, _ in health):
             return
         await asyncio.sleep(0.01)
     raise AssertionError(
-        f"only {len(stream.worker_health())} worker(s) became ready, expected {count}"
+        f"expected {count} live worker(s), got {stream.worker_health()}"
     )
 
 

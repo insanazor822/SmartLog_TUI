@@ -260,6 +260,10 @@ class TestActions:
     async def test_quit_is_clean(self, demo_log: Path):
         async def body(app, pilot):
             await pilot.press("q")
+            # Give the app a beat to run its shutdown path. Without this the
+            # run_test context exits while widgets still hold pending messages,
+            # and Textual raises WaitForScreenTimeout on a loaded runner.
+            await asyncio.sleep(0.5)
         await drive([demo_log], body, settle=1.0)
 
 
