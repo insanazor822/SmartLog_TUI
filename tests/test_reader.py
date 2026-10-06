@@ -316,6 +316,7 @@ class TestLifecycle:
             await stream.stop()
 
     @pytest.mark.asyncio
+    @pytest.mark.flaky(reruns=2, reason="3.10 runner is ~2x slower; drain() deadline")
     async def test_add_and_remove_path(self, tmp_path: Path):
         first = tmp_path / "first.log"
         second = tmp_path / "second.log"

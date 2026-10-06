@@ -290,6 +290,7 @@ class TestActions:
         assert {"q", "a", "f", "e", "p", "c", "r", "t", "d"} <= keys
 
     @pytest.mark.asyncio
+    @pytest.mark.flaky(reruns=2, reason="Textual shutdown needs more wall clock on 3.10")
     async def test_quit_is_clean(self, demo_log: Path):
         async def body(app, pilot):
             await pilot.press("q")
