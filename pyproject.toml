@@ -10,7 +10,7 @@ name = "smartlog-cli"
 version = "2.0.0"
 description = "Fast terminal log analyser with cascading root-cause diagnostics"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "insanazor822" }]
 keywords = ["logs", "tui", "observability", "diagnostics", "textual", "sre", "log-analysis", "cli", "root-cause"]
@@ -19,6 +19,7 @@ classifiers = [
     "Environment :: Console",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -60,6 +61,13 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "-q --strict-markers --durations=10"
 filterwarnings = ["ignore::DeprecationWarning"]
+
+# A Textual app that fails to shut down used to hang the suite forever. pytest
+# would sit there until the CI job hit its own multi-hour limit, with no clue
+# which test was stuck. faulthandler_timeout turns that into a loud failure with
+# a full stack trace after 90s — far above the slowest test (~4s) but well
+# inside the CI ceiling.
+faulthandler_timeout = 90
 
 [tool.ruff]
 line-length = 90

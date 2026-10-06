@@ -828,11 +828,23 @@ class SmartLogApp(App[None]):
     # -- teardown --------------------------------------------------------- #
 
     async def action_quit(self) -> None:
+        """Stop the background tasks, then leave.
+
+        ``_tick`` spends its time inside synchronous rendering (``RichLog.write``
+        walks the Rich style tree), and Python can only deliver a cancellation
+        at an ``await``. Awaiting the cancelled task therefore waits for the
+        render pass to finish — and on a busy machine, where that pass is long
+        and the queue keeps feeding it, ``await task`` never returned and the app
+        never exited. It showed up as a hang on Python 3.11 and as
+        ``WaitForScreenTimeout`` on 3.10.
+
+        Cancelling and then exiting without waiting breaks the cycle: the loop
+        stops scheduling the tasks, the context manager cancels whatever is left,
+        and ``stream.stop`` shuts the reader threads down on the way out.
+        """
         for task in (self._pump_task, self._tick_task, self._diag_task):
             if task is not None:
                 task.cancel()
-                with contextlib.suppress(asyncio.CancelledError, Exception):
-                    await task
         await self.stream.stop()
         self.exit()
 

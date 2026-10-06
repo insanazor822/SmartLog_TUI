@@ -15,14 +15,24 @@ from smartlog.reader import LogStream
 
 
 async def drain(stream: LogStream, *, want: int = 1, timeout: float = 5.0):
-    """Collect entries until ``want`` have arrived or the deadline passes."""
+    """Collect entries until ``want`` have arrived or the deadline passes.
+
+    Waits once for the whole remaining budget rather than polling in short
+    slices. The polling version called ``wait_for(queue.get(), 0.25)`` in a
+    loop, which cancels the pending getter every slice; on Python 3.10 an item
+    published during that cancellation window never woke the waiter, so the
+    reader had done its job and the test still timed out.
+    """
     collected: list = []
     deadline = time.monotonic() + timeout
-    while len(collected) < want and time.monotonic() < deadline:
+    while len(collected) < want:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
         try:
-            batch = await asyncio.wait_for(stream._queue.get(), timeout=0.25)
+            batch = await asyncio.wait_for(stream._queue.get(), remaining)
         except TimeoutError:
-            continue
+            break
         stream._queue.task_done()
         collected.extend(batch)
     return collected
