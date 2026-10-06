@@ -1,0 +1,87 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smartlog"
+version = "2.0.0"
+description = "Fast terminal log analyser with cascading root-cause diagnostics"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "insanazor822" }]
+keywords = ["logs", "tui", "observability", "diagnostics", "textual", "sre"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Logging",
+    "Topic :: System :: Monitoring",
+    "Typing :: Typed",
+]
+dependencies = [
+    "textual>=0.80",
+    "rich>=13.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "mypy>=1.8",
+    "ruff>=0.4",
+]
+clipboard = ["pyperclip>=1.8"]
+
+[project.scripts]
+smartlog = "smartlog.cli:main"
+
+[project.urls]
+"Homepage" = "https://github.com/insanazor822/smartlog"
+"Bug Tracker" = "https://github.com/insanazor822/smartlog/issues"
+"Source" = "https://github.com/insanazor822/smartlog"
+
+[tool.setuptools.packages.find]
+include = ["smartlog*"]
+
+[tool.setuptools.package-data]
+smartlog = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q --strict-markers"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 90
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "E501",    # long lines are handled by the formatter
+    "B008",
+    "SIM108",  # ternaries are not always clearer
+    "SIM105",  # try/except/pass is explicit about intent
+    "SIM115",  # long-lived file handles legitimately outlive a `with` block
+    "RUF001",  # Turkish test fixtures intentionally use dotless i
+    "RUF012",  # Textual CSS/BINDINGS are class-level constants by design
+    "RUF005",  # explicit concatenation reads better here
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E741"]   # `l` as a line variable is idiomatic in test tables
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+exclude = ["tests/"]

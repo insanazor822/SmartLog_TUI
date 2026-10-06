@@ -1,0 +1,97 @@
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# ---------------------------------------------------------------------------
+# Sanal ortamlar  (`.venv` ~132 MB - asla commitlenmemeli)
+# ---------------------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+!.env.example
+
+# ---------------------------------------------------------------------------
+# Paketleme / derleme
+# ---------------------------------------------------------------------------
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib60/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ---------------------------------------------------------------------------
+# Test / lint / tip araçları
+# ---------------------------------------------------------------------------
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+.tox/
+.nox/
+
+# ---------------------------------------------------------------------------
+# Derleyici / editör
+# ---------------------------------------------------------------------------
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ---------------------------------------------------------------------------
+# SmartLog çıktıları (yalnızca kaynak dosyaları commitlenir)
+# ---------------------------------------------------------------------------
+# Dışa aktarım: smartlog_20260830_120000.{md,json,txt,html}
+smartlog_*.md
+smartlog_*.json
+smartlog_*.txt
+smartlog_*.html
+smartlog_export_*
+# Tanı raporları
+diag_*.md
+report.html
+*.log.gz
+# Demo üreticisinin geçici çıktıları
+smartlog-demo/
+
+# ---------------------------------------------------------------------------
+# GitHub'a yüklenen temiz paket  (`python scripts/prepare_release.py`)
+# ---------------------------------------------------------------------------
+release/
+release-*/
+
+# ---------------------------------------------------------------------------
+# CI / ölçüm geçici dosyaları
+# ---------------------------------------------------------------------------
+benchmark*.log
+perf*.csv
+*.prof
+*.lprof
+callgrind.*

@@ -1,0 +1,35 @@
+# Metin dosyalarında satır sonu normalizasyonu (depolar arası tutarlılık).
+* text=auto eol=lf
+
+*.py    text diff=python
+*.md    text
+*.toml  text
+*.yml   text
+*.yaml  text
+*.txt   text
+*.cfg   text
+*.in    text
+
+# İkili dosyalar - asla diff/satır sonu işlemi uygulanmaz
+*.png   binary
+*.jpg   binary
+*.gz    binary
+*.zip   binary
+*.whl   binary
+*.pdf   binary
+
+# Python
+__pycache__/        binary
+*.py[cod]           binary
+*.so                binary
+.venv/              binary
+
+# Diff/merge için daha iyi görüntüleme
+*.lock              -diff
+uv.lock             -diff
+Cargo.lock          -diff
+
+# LFS önerisi (büyük çıktılar yanlışlıkla eklenirse)
+*.log               -diff -merge linguist-generated=true
+smartlog_*.html     -diff linguist-generated=true
+smartlog_*.json     -diff linguist-generated=true
