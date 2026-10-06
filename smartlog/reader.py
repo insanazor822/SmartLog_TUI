@@ -17,6 +17,11 @@ This implementation:
   that buffer, so memory is no longer duplicated into ``RichLog``'s own store.
 * handles rotation, truncation, gzip-free re-open and disappearance cleanly, and
   keeps ``(inode, offset)`` state so a resume does not re-read the world.
+* opens files **with delete-sharing on Windows**, so an external rotator
+  (``os.replace`` from logrotate, or a writer process) can rename the file we
+  are reading. Windows denies renaming a file that is open without
+  ``FILE_SHARE_DELETE``, which made every rotation fail with ``WinError 32``
+  and made the tailer unable to follow the rotated file at all.
 """
 
 from __future__ import annotations
@@ -42,6 +47,101 @@ _POLL_INTERVAL = 0.08        # idle poll cadence per file
 _BATCH_BYTES = 1 << 18       # 256 KiB read window per syscall
 _MAX_LINE_CHARS = 64 * 1024  # guard against a pathological unterminated line
 _BATCH_FLUSH_LINES = 500     # publish at least this often when busy
+_OPEN_SHARING_RETRIES = 5    # Windows: ride out transient sharing violations
+_OPEN_SHARING_DELAY = 0.02   # seconds between the retries above
+
+if os.name == "nt":  # pragma: no cover - Windows-only import
+    import msvcrt
+
+
+def _open_shared(path: Path, encoding: str) -> IO[str]:
+    """Open ``path`` for reading without blocking an external rename on Windows.
+
+    Python's ``open()`` on Windows opens with ``FILE_SHARE_READ |
+    FILE_SHARE_WRITE`` but *not* ``FILE_SHARE_DELETE``. So while we hold the
+    handle, another process cannot rename the file. That is exactly what real
+    rotation does: the writer renames ``app.log`` to ``app.log.1`` and creates a
+    fresh ``app.log``. On Windows the rename failed with ``PermissionError
+    [WinError 32]`` and the tailer could never follow a rotated file.
+
+    ``msvcrt.open_osfhandle`` lets us take the raw Win32 handle that
+    ``CreateFileW`` produced — and that handle can carry ``FILE_SHARE_DELETE`` —
+    and hand it to the CRT as a file descriptor, which ``os.fdopen`` then wraps
+    into a normal text stream. POSIX has no equivalent restriction, so the plain
+    builtin is used there.
+    """
+    if os.name != "nt":
+        return open(path, encoding=encoding, errors="replace")
+
+    last_exc: OSError | None = None
+    o_binary = getattr(os, "O_BINARY", 0)
+    open_osfhandle: Any = msvcrt.open_osfhandle  # type: ignore[attr-defined]
+    for attempt in range(_OPEN_SHARING_RETRIES):
+        try:
+            handle = _win_create_file_shared(path)
+            fd = open_osfhandle(handle, os.O_RDONLY | o_binary)
+        except OSError as exc:
+            # PermissionError here means a writer is mid-rotation; retry briefly.
+            last_exc = exc
+            if attempt == _OPEN_SHARING_RETRIES - 1:
+                raise
+            time.sleep(_OPEN_SHARING_DELAY)
+            continue
+        try:
+            return os.fdopen(fd, encoding=encoding, errors="replace")
+        except Exception:
+            # fdopen failed: the CRT owns the handle now, so close the fd.
+            with contextlib.suppress(OSError):
+                os.close(fd)
+            raise
+    raise last_exc if last_exc is not None else OSError(f"cannot open {path}")
+
+
+if os.name == "nt":  # pragma: no cover - Windows-only code path
+
+    def _win_create_file_shared(path: Path) -> int:
+        """``CreateFileW`` for reading with ``FILE_SHARE_DELETE`` allowed.
+
+        Python's ``open()`` denies delete-sharing, which blocks any external
+        rename while we hold the handle. Going straight to ``CreateFileW`` lets
+        us pass ``FILE_SHARE_DELETE`` and keep following the rotated file.
+        """
+
+        import ctypes
+        from ctypes import wintypes
+
+        GENERIC_READ = 0x8000_0000
+        FILE_SHARE_READ = 0x1
+        FILE_SHARE_WRITE = 0x2
+        FILE_SHARE_DELETE = 0x4
+        OPEN_EXISTING = 3
+        FILE_ATTRIBUTE_NORMAL = 0x80
+        INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
+
+        kernel32: Any = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
+        kernel32.CreateFileW.restype = wintypes.HANDLE
+        kernel32.CreateFileW.argtypes = (
+            wintypes.LPCWSTR,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.LPVOID,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.HANDLE,
+        )
+        handle = kernel32.CreateFileW(
+            str(path),
+            GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            None,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            None,
+        )
+        if handle is None or handle == INVALID_HANDLE_VALUE:
+            err = ctypes.get_last_error()  # type: ignore[attr-defined]
+            raise ctypes.WinError(err)  # type: ignore[attr-defined]
+        return int(handle)
 
 
 @dataclass(slots=True)
@@ -201,8 +301,7 @@ class TailWorker:
             state.line_number = 0
 
         try:
-            handle = open(state.path, encoding=self._encoding,
-                          errors="replace")
+            handle = _open_shared(state.path, self._encoding)
         except OSError as exc:
             if self._on_error is not None:
                 self._on_error(exc, state.path)

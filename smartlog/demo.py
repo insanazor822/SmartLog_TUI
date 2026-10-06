@@ -17,6 +17,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import IO
 
+# Windows denies renaming a file another process holds open without
+# FILE_SHARE_DELETE; retry briefly so a live reader cannot break the demo.
+_ROTATE_ATTEMPTS = 10
+_ROTATE_RETRY_DELAY = 0.05
+
 __all__ = ["DEMO_SCENARIOS", "DemoGenerator"]
 
 TS = "%Y-%m-%d %H:%M:%S"
@@ -296,22 +301,40 @@ class DemoGenerator:
         self._rotate()
 
     def _rotate(self) -> None:
-        """Close, rename, optionally gzip, then reopen — exercises rotation."""
+        """Close, rename, optionally gzip, then reopen — exercises rotation.
+
+        The rename is retried briefly: on Windows a file that *any* other
+        process still holds open without ``FILE_SHARE_DELETE`` rejects the
+        rename with ``WinError 32``. A live SmartLog reader watching the same
+        directory can be holding a handle at exactly this moment, so a single
+        attempt made rotation silently unreliable there.
+        """
         if self._handle is not None:
             try:
                 self._handle.close()
             except OSError:
                 pass
             self._handle = None
+
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S%f")
         rotated = self.directory / f"app.log.{stamp}"
-        try:
-            os.replace(self.path, rotated)
-            self._rotations += 1
-        except OSError:
-            self._written = 0
-            self._open()
-            return
+        for attempt in range(_ROTATE_ATTEMPTS):
+            try:
+                os.replace(self.path, rotated)
+            except PermissionError:      # WinError 32 / EACCES
+                if attempt == _ROTATE_ATTEMPTS - 1:
+                    self._written = 0
+                    self._open()
+                    return
+                time.sleep(_ROTATE_RETRY_DELAY)
+                continue
+            except OSError:
+                self._written = 0
+                self._open()
+                return
+            break
+        self._rotations += 1
+
         if self.gzip_rotated:
             try:
                 with open(rotated, "rb") as src, gzip.open(

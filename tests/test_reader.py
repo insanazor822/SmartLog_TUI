@@ -28,6 +28,25 @@ async def drain(stream: LogStream, *, want: int = 1, timeout: float = 5.0):
     return collected
 
 
+def rotate(path: Path, rotated: Path, *, attempts: int = 20) -> None:
+    """Rename ``path`` to ``rotated``, tolerating Windows sharing delays.
+
+    On Windows a rename fails with ``WinError 32`` while *any* process still has
+    the file open without ``FILE_SHARE_DELETE``. The reader opens with
+    delete-sharing (see ``smartlog.reader._open_shared``), but a handle can
+    still be in flight, so a short retry keeps the test deterministic.
+    """
+    last: OSError | None = None
+    for _ in range(attempts):
+        try:
+            os.replace(path, rotated)
+            return
+        except PermissionError as exc:      # WinError 32 / EACCES
+            last = exc
+            time.sleep(0.05)
+    raise last if last is not None else OSError("rotation failed")
+
+
 @pytest.fixture
 def log(tmp_path: Path) -> Path:
     path = tmp_path / "app.log"
@@ -127,7 +146,7 @@ class TestTailing:
                 handle.flush()
             await drain(stream, want=1)
 
-            os.replace(log, log.with_suffix(".log.1"))
+            rotate(log, log.with_suffix(".log.1"))
             log.write_text("INFO after rotation\n", encoding="utf-8")
 
             entries = await drain(stream, want=1, timeout=6.0)
