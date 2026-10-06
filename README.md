@@ -7,7 +7,7 @@
 *Real-time multi-file log monitoring, anomaly spike detection, and AI-assisted
 root-cause analysis — entirely in your terminal.*
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Textual](https://img.shields.io/badge/UI-Textual-00C7B7?style=flat-square&logo=whale&logoColor=white)](https://textual.textualize.io/)
 [![Tests](https://img.shields.io/badge/tests-277%20passing-success?style=flat-square)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
@@ -210,7 +210,7 @@ smartlog/
 tests/              277 tests (parser, reader, stats, diagnostics,
                     filters, exporters, CLI, utils, compat, headless UI)
 benchmarks/         bench.py (measurement) + compare.py (v1 comparison)
-.github/workflows/  ci.yml — Python 3.10–3.13 × Linux/macOS/Windows
+.github/workflows/  ci.yml — Python 3.11–3.13 × Linux/macOS/Windows
 ```
 
 ### Codebase boundaries
@@ -240,7 +240,7 @@ python benchmarks/compare.py --legacy <v1_directory>
 ```
 
 CI (`.github/workflows/ci.yml`) runs these three gates plus the benchmark script
-across Python 3.10–3.13 on Linux, macOS, and Windows.
+across Python 3.11–3.13 on Linux, macOS, and Windows.
 
 ### Upgrading from v1
 
