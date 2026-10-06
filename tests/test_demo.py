@@ -19,11 +19,30 @@ def parser() -> LineParser:
     return LineParser()
 
 
+def run_until(gen: DemoGenerator, *, lines: int = 0, rotations: int = 0,
+              timeout: float = 15.0) -> None:
+    """Let ``gen`` run until its counters reach ``lines`` / ``rotations``.
+
+    The generator is thread-paced, so any fixed sleep is a guess: long enough on
+    a fast workstation, too short on a loaded CI runner. Waiting on the counters
+    makes these tests deterministic without slowing the fast path down.
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if gen.lines_written >= lines and gen.rotations >= rotations:
+            return
+        time.sleep(0.02)
+    raise AssertionError(
+        f"generator stalled at lines={gen.lines_written} (want {lines}), "
+        f"rotations={gen.rotations} (want {rotations})"
+    )
+
+
 class TestGenerator:
     def test_writes_parsable_lines(self, tmp_path: Path, parser: LineParser):
         gen = DemoGenerator(tmp_path, base_rate=200.0, interval=0.01, seed=1)
         path = gen.start()
-        time.sleep(0.4)
+        run_until(gen, lines=50)
         gen.stop()
 
         text = path.read_text(encoding="utf-8")
@@ -36,7 +55,7 @@ class TestGenerator:
         gen = DemoGenerator(tmp_path, base_rate=400.0, interval=0.005,
                             burst=True, seed=7)
         path = gen.start()
-        time.sleep(0.6)
+        run_until(gen, lines=400)
         gen.stop()
 
         kb = KnowledgeBase()
@@ -48,7 +67,7 @@ class TestGenerator:
     def test_errors_are_generated(self, tmp_path: Path, parser: LineParser):
         gen = DemoGenerator(tmp_path, base_rate=400.0, interval=0.005, seed=3)
         path = gen.start()
-        time.sleep(0.5)
+        run_until(gen, lines=400)
         gen.stop()
 
         lines = [l for l in path.read_text(encoding="utf-8").splitlines() if l]
@@ -59,7 +78,7 @@ class TestGenerator:
     def test_mixed_formats(self, tmp_path: Path, parser: LineParser):
         gen = DemoGenerator(tmp_path, base_rate=400.0, interval=0.005, seed=11)
         path = gen.start()
-        time.sleep(0.5)
+        run_until(gen, lines=400)
         gen.stop()
 
         lines = [l for l in path.read_text(encoding="utf-8").splitlines() if l]
@@ -70,8 +89,12 @@ class TestGenerator:
                             rotate_every=1500, min_rotate_gap=0.05,
                             gzip_rotated=True, seed=5)
         path = gen.start()
-        time.sleep(1.2)
+        # Wait for the rotation to happen rather than for a fixed duration: the
+        # generator is thread-paced, so a sleep that is long enough on a fast
+        # machine can still be too short on a loaded CI runner.
+        run_until(gen, rotations=1)
         gen.stop()
+        assert gen.rotations >= 1, "rotation never triggered"
 
         rotated = list(tmp_path.glob("*.gz"))
         assert rotated, "no rotated gz file produced"
@@ -83,26 +106,26 @@ class TestGenerator:
     def test_counts_lines_written(self, tmp_path: Path):
         gen = DemoGenerator(tmp_path, base_rate=300.0, interval=0.005, seed=2)
         gen.start()
-        time.sleep(0.4)
+        run_until(gen, lines=50)
         gen.stop()
         assert gen.lines_written > 0
 
     def test_stop_is_idempotent(self, tmp_path: Path):
         gen = DemoGenerator(tmp_path, base_rate=50.0, interval=0.01)
         gen.start()
-        time.sleep(0.15)
+        run_until(gen, lines=5)
         gen.stop()
         gen.stop()      # must not raise
 
     def test_deterministic_with_seed(self, tmp_path: Path):
-        """Same seed + same elapsed budget must produce the same line sequence."""
+        """Same seed + same line budget must produce the same line sequence."""
         import re
 
         def sample(directory: Path) -> list[str]:
             gen = DemoGenerator(directory, base_rate=200.0, interval=0.005,
                                 seed=42, rotate_every=0)
             path = gen.start()
-            time.sleep(0.25)
+            run_until(gen, lines=100)
             gen.stop()
             # Strip the timestamp and the per-directory bootstrap line: neither
             # is seed-derived.

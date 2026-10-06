@@ -28,6 +28,29 @@ async def drain(stream: LogStream, *, want: int = 1, timeout: float = 5.0):
     return collected
 
 
+async def await_workers(stream: LogStream, count: int, *, timeout: float = 5.0) -> None:
+    """Wait until ``stream`` has ``count`` workers that are actually following.
+
+    ``LogStream.add_path`` registers the worker and starts the thread, but the
+    thread has not yet opened or stat'ed the file when the call returns. A test
+    that appends to the new path immediately afterwards races that first
+    ``os.stat``/``seek``, so on a loaded runner the appended line can be missed.
+
+    ``worker_health`` reports ``missing`` until the worker has the file open, so
+    waiting for every worker to leave that state removes the race instead of
+    papering over it with a longer timeout.
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        health = stream.worker_health()
+        if len(health) >= count and not any(state == "missing" for _, _, state in health):
+            return
+        await asyncio.sleep(0.01)
+    raise AssertionError(
+        f"only {len(stream.worker_health())} worker(s) became ready, expected {count}"
+    )
+
+
 def rotate(path: Path, rotated: Path, *, attempts: int = 20) -> None:
     """Rename ``path`` to ``rotated``, tolerating Windows sharing delays.
 
@@ -300,6 +323,7 @@ class TestLifecycle:
         await stream.start()
         try:
             stream.add_path(second, start_at_end=False)
+            await await_workers(stream, 2)
             second.write_text("INFO dynamic\n", encoding="utf-8")
             entries = await drain(stream, want=1, timeout=6.0)
             assert entries[0].message == "dynamic"
