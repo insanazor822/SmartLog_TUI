@@ -22,6 +22,7 @@ ENV/
 # Paketleme / derleme
 # ---------------------------------------------------------------------------
 build/
+dist/
 develop-eggs/
 downloads/
 eggs/

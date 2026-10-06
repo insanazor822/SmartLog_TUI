@@ -33,6 +33,12 @@ follows the log stream, classifies each error **exactly once**, detects anomalie
 ## ⚡ Quick Start
 
 ```bash
+# Install from PyPI
+pip install smartlog-cli
+
+# Or from a source checkout
+git clone https://github.com/insanazor822/SmartLog_TUI.git
+cd SmartLog_TUI
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
@@ -58,6 +64,11 @@ smartlog doctor
 Writing `smartlog app.log` implies the `watch` subcommand. When no file is given to
 `watch`, a **directory** is accepted instead and `.log`/`.txt`/`.out`/`.err` files
 are discovered recursively.
+
+> **Note on naming.** The PyPI distribution is **`smartlog-cli`** — the bare
+> `smartlog` name on PyPI belongs to an unrelated package. The importable Python
+> package and the console command are both still called `smartlog`:
+> `from smartlog import …` and `smartlog watch …`.
 
 ### Shared options
 

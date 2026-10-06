@@ -3,14 +3,17 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "smartlog"
+# Distribution name is "smartlog-cli": the bare "smartlog" name is already
+# taken on PyPI by an unrelated package (dnut/smartlog 0.3.0). The importable
+# package and the console script both remain "smartlog".
+name = "smartlog-cli"
 version = "2.0.0"
 description = "Fast terminal log analyser with cascading root-cause diagnostics"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "insanazor822" }]
-keywords = ["logs", "tui", "observability", "diagnostics", "textual", "sre"]
+keywords = ["logs", "tui", "observability", "diagnostics", "textual", "sre", "log-analysis", "cli", "root-cause"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -42,9 +45,10 @@ clipboard = ["pyperclip>=1.8"]
 smartlog = "smartlog.cli:main"
 
 [project.urls]
-"Homepage" = "https://github.com/insanazor822/smartlog"
-"Bug Tracker" = "https://github.com/insanazor822/smartlog/issues"
-"Source" = "https://github.com/insanazor822/smartlog"
+"Homepage" = "https://github.com/insanazor822/SmartLog_TUI"
+"Bug Tracker" = "https://github.com/insanazor822/SmartLog_TUI/issues"
+"Source" = "https://github.com/insanazor822/SmartLog_TUI"
+"Changelog" = "https://github.com/insanazor822/SmartLog_TUI/releases"
 
 [tool.setuptools.packages.find]
 include = ["smartlog*"]
