@@ -457,10 +457,17 @@ class SmartLogApp(App[None]):
             files.add_columns("file", "state")
 
     def _prime_view(self) -> None:
-        """Draw whatever is already buffered (used when tailing from the start)."""
+        """Draw whatever is already buffered (used when tailing from the start).
+
+        Rendering only — the statistics are deliberately *not* recorded here.
+        ``LogStream.publish`` feeds the ring buffer and the batch queue from the
+        same entries, so ``snapshot()`` and ``batches()`` return the same lines.
+        Recording both counted every entry twice whenever the reader was fast
+        enough to fill the buffer before ``_prime_view`` ran (CI saw
+        ``total_lines == 4`` for a 2-line file). ``_pump`` owns the counts.
+        """
         entries = self.stream.snapshot()
         if entries:
-            self.stats.record_many(entries)
             self._render_entries(entries, force_all=True)
             self._rendered = len(entries)
 

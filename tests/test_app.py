@@ -7,6 +7,7 @@ the widgets update. These are the only tests that import ``textual``.
 from __future__ import annotations
 
 import asyncio
+import tempfile
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
@@ -101,6 +102,38 @@ class TestBoot:
             assert app.stats.total_errors >= 1
 
         await drive([log], body, settle=0.8, start_at_end=False)
+
+    @pytest.mark.asyncio
+    async def test_history_is_counted_exactly_once_when_reader_wins_the_race(self):
+        """Regression: a fast reader must not double-count history.
+
+        ``_prime_view`` renders from the ring buffer while ``_pump`` records
+        from the batch queue. Both see the same entries, so recording in both
+        places inflated the totals to 4 for a 2-line file whenever the reader
+        outran ``_prime_view``. CI hit this as ``assert 4 == 2``.
+
+        The window is primed by hand so the fast-reader case is deterministic
+        instead of depending on scheduler luck.
+        """
+        log = Path(tempfile.mkdtemp()) / "history.log"
+        log.write_text(
+            "2026-08-30 20:00:01 INFO one\n"
+            "2026-08-30 20:00:02 INFO two\n"
+            "2026-08-30 20:00:03 ERROR three\n",
+            encoding="utf-8",
+        )
+
+        app = SmartLogApp([log], start_at_end=False)
+        async with app.run_test(size=SIZE):
+            # Fill the buffer the way a fast reader would, then prime.
+            await asyncio.sleep(0.5)
+            assert app.stream.snapshot(), "reader produced nothing to prime with"
+            app._prime_view()
+            await asyncio.sleep(0.3)
+            assert app.stats.total_lines == 3, (
+                f"expected exactly 3 counted lines, got {app.stats.total_lines}"
+            )
+            assert app.stats.total_errors == 1
 
     @pytest.mark.asyncio
     async def test_no_paths_shows_warning(self):
