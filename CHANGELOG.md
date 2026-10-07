@@ -56,13 +56,13 @@ flat script; v2 is a packaged, typed, tested project.
   so any external rename failed with `WinError 32` and the tailer could not
   follow a rotated file at all. Files are now opened through `CreateFileW` with
   delete-sharing, and renames retry briefly.
-- **Distribution renamed to `smartlog-cli`.** The bare `smartlog` name on PyPI
-  belongs to an unrelated package. The importable package and the console
-  command are still `smartlog`.
+- **Distribution keeps the `smartlog-tui` name.** The bare `smartlog` name on PyPI
+  belongs to an unrelated package, so it is not available. The importable
+  package and the console command are still `smartlog`.
 
 ### Changed in packaging
 
-- PyPI distribution: `smartlog-cli`. `pip install smartlog-cli`; `smartlog` as an
+- PyPI distribution: `smartlog-tui`. `pip install smartlog-tui`; `smartlog` as an
   import and as a command.
 - Python 3.10–3.13, verified on Linux, macOS and Windows via CI.
 - 386 tests, `mypy strict` clean, `py.typed` shipped.

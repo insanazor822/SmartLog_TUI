@@ -3,10 +3,11 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-# Distribution name is "smartlog-cli": the bare "smartlog" name is already
-# taken on PyPI by an unrelated package (dnut/smartlog 0.3.0). The importable
-# package and the console script both remain "smartlog".
-name = "smartlog-cli"
+# Distribution name is "smartlog-tui", matching the existing PyPI project.
+# The bare "smartlog" name on PyPI belongs to an unrelated package
+# (dnut/smartlog 0.3.0), so it is not available. The importable package and
+# the console script both remain "smartlog".
+name = "smartlog-tui"
 version = "2.0.0"
 description = "Fast terminal log analyser with cascading root-cause diagnostics"
 readme = "README.md"
