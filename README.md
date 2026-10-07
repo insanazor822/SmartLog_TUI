@@ -7,10 +7,11 @@
 *Real-time multi-file log monitoring, anomaly spike detection, and AI-assisted
 root-cause analysis — entirely in your terminal.*
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![PyPI](https://img.shields.io/pypi/v/smartlog-tui?logo=pypi&logoColor=white)](https://pypi.org/project/smartlog-tui/)
+[![Python](https://img.shields.io/pypi/pyversions/smartlog-tui?logo=python&logoColor=white)](https://pypi.org/project/smartlog-tui/)
+[![CI](https://img.shields.io/github/actions/workflow/status/insanazor822/SmartLog_TUI/ci.yml?branch=main&label=CI&logo=github&logoColor=white)](https://github.com/insanazor822/SmartLog_TUI/actions/workflows/ci.yml)
 [![Textual](https://img.shields.io/badge/UI-Textual-00C7B7?style=flat-square&logo=whale&logoColor=white)](https://textual.textualize.io/)
-[![Tests](https://img.shields.io/badge/tests-277%20passing-success?style=flat-square)](tests/)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](https://github.com/insanazor822/SmartLog_TUI/blob/main/LICENSE)
 
 </div>
 
@@ -26,7 +27,7 @@ follows the log stream, classifies each error **exactly once**, detects anomalie
 - 🧠 **Cascading diagnosis:** OpenAI-compatible server → local Ollama/llama.cpp → **always-available** offline rule engine.
 - 🚨 **Anomaly detection:** error rate is scored against a moving baseline, not a fixed threshold.
 - 📤 **Export:** Markdown, JSON, plain text, and a **single-file searchable HTML** report.
-- 🧪 **277 tests**, fully type-annotated, `mypy strict` clean.
+- 🧪 **387 tests**, fully type-annotated, `mypy strict` clean.
 
 ---
 
@@ -207,10 +208,11 @@ smartlog/
 ├── demo.py         scenario-based realistic log generator
 └── cli.py          watch / scan / export / doctor
 
-tests/              277 tests (parser, reader, stats, diagnostics,
+tests/              387 tests (parser, reader, stats, diagnostics,
                     filters, exporters, CLI, utils, compat, headless UI)
 benchmarks/         bench.py (measurement) + compare.py (v1 comparison)
 .github/workflows/  ci.yml — Python 3.10–3.13 × Linux/macOS/Windows
+                    publish.yml — PyPI on release (trusted publishing)
 ```
 
 ### Codebase boundaries
@@ -231,7 +233,7 @@ it — once the v1 shims are retired, it can be deleted outright.
 ## 🧪 Development
 
 ```bash
-pytest                       # 277 tests
+pytest                       # 387 tests
 pytest tests/test_app.py     # TUI only (headless)
 mypy smartlog                # strict type check
 ruff check smartlog tests benchmarks

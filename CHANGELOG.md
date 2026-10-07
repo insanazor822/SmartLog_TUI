@@ -65,7 +65,7 @@ flat script; v2 is a packaged, typed, tested project.
 - PyPI distribution: `smartlog-tui`. `pip install smartlog-tui`; `smartlog` as an
   import and as a command.
 - Python 3.10–3.13, verified on Linux, macOS and Windows via CI.
-- 386 tests, `mypy strict` clean, `py.typed` shipped.
+- 387 tests, `mypy strict` clean, `py.typed` shipped.
 
 [Unreleased]: https://github.com/insanazor822/SmartLog_TUI/compare/v2.0.0...HEAD
 [2.0.0]: https://github.com/insanazor822/SmartLog_TUI/releases/tag/v2.0.0
